@@ -5,7 +5,7 @@ export default class ViewportSystem extends System {
     super()
     this.viewportWidth = window.innerWidth;
     this.viewportHeight = window.innerHeight;
-    this.viewportScale = 2;
+    this.viewportScale = 2.4;
 
     if (window.location.href.indexOf('debug1') != -1) {
       this.viewportScale = 0.9
@@ -26,8 +26,8 @@ export default class ViewportSystem extends System {
     this.secondaryViewportScale = 1;
     this.secondaryViewportMode = 'follow'
 
-    this.viewportMin = 0.03;
-    this.viewportMax = 1.4;
+    this.viewportMin = 0.5;
+    this.viewportMax = 5;
 
     this.followEntityId = null;
     this.primaryFollowEntityId = null;

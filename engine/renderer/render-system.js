@@ -18,7 +18,7 @@ export default class RenderSystem extends System {
       this.primaryCanvas = document.getElementById('canvas');
 
       // Rules around the canvas stack
-      this.canvasLayerOrder = ['RENDERABLES', 'LIGHTING', 'PARTICLES']
+      this.canvasLayerOrder = ['RENDERABLES', 'PARTICLES_BEFORE_LIGHTING', 'LIGHTING', 'PARTICLES_AFTER_LIGHTING']
       this.canvasesByLayer = {}
       this.canvasesByKey = {}
       this.lastCanvasLayerId = 0;
@@ -57,6 +57,10 @@ export default class RenderSystem extends System {
         renderer: renderer,
         applyOptions: payload.applyOptions || {}
       })
+
+      if (payload.onInitialize) {
+        payload.onInitialize(renderer, layerCanvasCtx); // Callback hook so other systems can perform renderer initialization
+      }
     }
 
     _ensureLayerCanvasAvailable(layerKey, layerRenderLibrary) {

@@ -18,7 +18,7 @@ export default class ParticleSystem extends System {
         });
 
         this.send("REGISTER_RENDER_LAYER", {
-            layer: 'PARTICLES',
+            layer: 'PARTICLES_BEFORE_LIGHTING',
             render: (renderOptions) => {
                 this._render(this.particles, renderOptions)
             }
@@ -64,6 +64,7 @@ export default class ParticleSystem extends System {
             particleSpeedMax,
             particleEmissionAngleDegreesMin,
             particleEmissionAngleDegreesMax,
+            particleSpawnRadius = 0,
         } = emitter;
 
         for (let i = 0; i < particleCount; i++) {
@@ -73,16 +74,22 @@ export default class ParticleSystem extends System {
             const angleDeg = this._rand(particleEmissionAngleDegreesMin, particleEmissionAngleDegreesMax);
             const angleRad = angleDeg * Math.PI / 180;
             const speed = this._rand(particleSpeedMin, particleSpeedMax);
-
+    
             const velocityX = Math.cos(angleRad) * speed;
             const velocityY = Math.sin(angleRad) * speed;
             const color = Array.isArray(particleColors)
                 ? particleColors[Math.floor(Math.random() * particleColors.length)]
                 : particleColors;
-
+    
+            // Apply spawn radius offset
+            const theta = Math.random() * 2 * Math.PI;
+            const radius = Math.sqrt(Math.random()) * particleSpawnRadius;
+            const offsetX = Math.cos(theta) * radius;
+            const offsetY = Math.sin(theta) * radius;
+    
             this.particles.push({
-                xPosition: xPosition,
-                yPosition: yPosition,
+                xPosition: xPosition + offsetX,
+                yPosition: yPosition + offsetY,
                 vx: velocityX,
                 vy: velocityY,
                 width,

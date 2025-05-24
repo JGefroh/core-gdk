@@ -5,6 +5,7 @@ export default class CanvasRenderer extends System {
     drawCanvasLayer(renderCtx, layer) {
         renderCtx.save();
         renderCtx.globalCompositeOperation = layer.applyOptions.globalCompositeOperation || renderCtx.globalCompositeOperation;
+        renderCtx.filter = layer.applyOptions.filter || renderCtx.filter;
         renderCtx.drawImage(layer.canvas, 0, 0);
         renderCtx.restore();
     }
@@ -26,6 +27,10 @@ export default class CanvasRenderer extends System {
     }
 
     postFrame() {
+        // no-op
+    }
+
+    loadTexture(texture) {
         // no-op
     }
 

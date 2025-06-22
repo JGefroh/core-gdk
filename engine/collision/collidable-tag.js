@@ -29,11 +29,11 @@ export default class Collidable extends Tag {
     }
 
     getWidth() {
-      return this.entity.getComponent('PositionComponent').width;
+      return this.entity.getComponent('CollisionComponent').width || this.entity.getComponent('PositionComponent').width;
     }
 
     getHeight() {
-      return this.entity.getComponent('PositionComponent').height;
+      return this.entity.getComponent('CollisionComponent').height || this.entity.getComponent('PositionComponent').height;
     }
 
     getAngleDegrees() {

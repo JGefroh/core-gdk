@@ -9,22 +9,103 @@ export default class GuiCanvasRenderable extends Tag {
     static isAssignableTo(entity) {
       return entity.hasComponent('GuiCanvasRenderComponent');
     };
-  
-    getXPosition() {
-      return this.entity.getComponent('GuiCanvasRenderComponent').xPosition;
-    };
-  
-    getYPosition() {
-      return this.entity.getComponent('GuiCanvasRenderComponent').yPosition;
-    };
-  
-    getWidth() {
-      return this.entity.getComponent('GuiCanvasRenderComponent').width;
+
+    ////////
+    // Layout
+    ////////
+
+    getElementKey() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').elementKey;
+    }
+
+    getAutoLayout() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').autolayout;
+    }
+
+    getLayoutParentGuiKey() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').layoutParentGuiKey;
+    }
+
+
+    ////////
+    // Position
+    ////////
+
+    getCenterXPosition() {
+      if (!this.entity.getComponent('GuiCanvasRenderComponent').renderAlignment || this.entity.getComponent('GuiCanvasRenderComponent').renderAlignment == 'center') {
+        return this.entity.getComponent('GuiCanvasRenderComponent').canvasXPosition;
+      }
+      else if (this.entity.getComponent('GuiCanvasRenderComponent').renderAlignment == 'bottom-center') {
+        return this.entity.getComponent('GuiCanvasRenderComponent').canvasXPosition; 
+      }
+      else if (this.entity.getComponent('GuiCanvasRenderComponent').renderAlignment == 'top-left') {
+        return this.entity.getComponent('GuiCanvasRenderComponent').canvasXPosition + (this.getWidth() / 2);
+      }
+    }
+
+    getCenterYPosition() {
+      if (!this.entity.getComponent('GuiCanvasRenderComponent').renderAlignment || this.entity.getComponent('GuiCanvasRenderComponent').renderAlignment == 'center') {
+        return this.entity.getComponent('GuiCanvasRenderComponent').canvasYPosition;
+      }
+      else if (this.entity.getComponent('GuiCanvasRenderComponent').renderAlignment == 'bottom-center') {
+        return this.entity.getComponent('GuiCanvasRenderComponent').canvasYPosition - (this.getHeight() / 2);
+      }
+      else if (this.entity.getComponent('GuiCanvasRenderComponent').renderAlignment == 'top-left') {
+        return this.entity.getComponent('GuiCanvasRenderComponent').canvasYPosition + (this.getHeight() / 2);
+      }
+
+    }
+
+    getCanvasXPosition() {
+      if (!this.entity.getComponent('GuiCanvasRenderComponent').renderAlignment || this.entity.getComponent('GuiCanvasRenderComponent').renderAlignment == 'center') {
+        return this.entity.getComponent('GuiCanvasRenderComponent').canvasXPosition;
+      }
+      else if (this.entity.getComponent('GuiCanvasRenderComponent').renderAlignment == 'bottom-center') {
+        return this.entity.getComponent('GuiCanvasRenderComponent').canvasXPosition;
+      }
+      else if (this.entity.getComponent('GuiCanvasRenderComponent').renderAlignment == 'top-left') {
+        return this.entity.getComponent('GuiCanvasRenderComponent').canvasXPosition + (this.getWidth() / 2);
+      }
     };
 
-    getHeight() {
-      return this.entity.getComponent('GuiCanvasRenderComponent').height;
+    getCanvasYPosition() {
+      if (!this.entity.getComponent('GuiCanvasRenderComponent').renderAlignment || this.entity.getComponent('GuiCanvasRenderComponent').renderAlignment == 'center') {
+        return this.entity.getComponent('GuiCanvasRenderComponent').canvasYPosition;
+      }
+      else if (this.entity.getComponent('GuiCanvasRenderComponent').renderAlignment == 'bottom-center') {
+        return this.entity.getComponent('GuiCanvasRenderComponent').canvasYPosition + (-this.getHeight() / 2);
+      }
+      else if (this.entity.getComponent('GuiCanvasRenderComponent').renderAlignment == 'top-left') {
+        return this.entity.getComponent('GuiCanvasRenderComponent').canvasYPosition + (this.getHeight() / 2);
+      }
+    };
+
+    getOffsetXAmount() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').offsetXAmount;
     }
+
+    getOffsetYAmount() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').offsetYAmount;
+    }
+
+    getAngleDegrees() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').angleDegrees
+    }
+
+    getShape() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').radius ? 'circle' : 'rectangle'
+    }
+
+    getRenderAlignment() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').renderAlignment;
+    }
+
+
+    
+    ////////
+    // Text and Typography
+    ////////
+  
 
     getText() {
       return this.entity.getComponent('GuiCanvasRenderComponent').text
@@ -34,24 +115,8 @@ export default class GuiCanvasRenderable extends Tag {
       this.entity.getComponent('GuiCanvasRenderComponent').text = text;
     }
 
-    getImagePath() {
-      return this.entity.getComponent('GuiCanvasRenderComponent').imagePath;
-    }
-
-    getAngleDegrees() {
-      return this.entity.getComponent('GuiCanvasRenderComponent').angleDegrees
-    }
-
-    getRadius() {
-        return this.entity.getComponent('GuiCanvasRenderComponent').radius;   
-    }
-
-    setImageObject(imageObject) {
-      this.entity.getComponent('GuiCanvasRenderComponent').imageObject = imageObject
-    }
-
-    getImageObject() {
-      return this.entity.getComponent('GuiCanvasRenderComponent').imageObject
+    getTextAlign() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').textAlign;
     }
 
     getTextOffsetX() {
@@ -65,6 +130,104 @@ export default class GuiCanvasRenderable extends Tag {
     getFontSize() {
         return this.entity.getComponent('GuiCanvasRenderComponent').fontSize;
     }
+
+    getFontColor() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').fontColor;
+    }
+
+    getFontType() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').fontType
+    }
+
+
+    ////////
+    // Size
+    ////////
+  
+    getWidth() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').width;
+    };
+
+    getHeight() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').height;
+    }
+
+    setWidth(width) {
+      this.entity.getComponent('GuiCanvasRenderComponent').width = width;
+    }
+
+
+    ////////
+    // Textures
+    ////////
+    getShapeColor() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').fillStyle;   
+    }
+    getImagePath() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').imagePath;
+    }
+    getImageStyle() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').imageStyle;
+    }
+
+
+    ////////
+    // Borders
+    ////////
+    getBorderSize() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').borderSize;
+    }
+
+    getBorderColor() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').borderColor;
+    }
+
+    ////////
+    // World GUIs
+    ////////
+
+    getLayer() {
+      if (this.entity.getComponent('GuiCanvasRenderComponent').attachedToEntity) {
+        return 'world'
+      }
+      return 'canvas'
+    }
+
+    getAttachedExists() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').attachedToEntity?.id;
+    }
+    
+    getAttachedXPosition() {
+      let gui = this.entity.getComponent('GuiCanvasRenderComponent')
+      if (gui.attachedToEntity?.id) {
+        return gui.attachedToEntity.getComponent('PositionComponent').xPosition
+      }
+    };
+  
+    getAttachedYPosition() {
+      let gui = this.entity.getComponent('GuiCanvasRenderComponent')
+      if (gui.attachedToEntity?.id) {
+        return gui.attachedToEntity.getComponent('PositionComponent').yPosition
+      }
+    };
+
+    getAttachedEntity() {
+       return this.entity.getComponent('GuiCanvasRenderComponent').attachedToEntity;
+    }
+
+
+
+    getRadius() {
+        return this.entity.getComponent('GuiCanvasRenderComponent').radius;   
+    }
+
+    setImageObject(imageObject) {
+      this.entity.getComponent('GuiCanvasRenderComponent').imageObject = imageObject
+    }
+
+    getImageObject() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').imageObject
+    }
     getFillStyle() {
         return this.entity.getComponent('GuiCanvasRenderComponent').fillStyle;   
     }
@@ -74,19 +237,12 @@ export default class GuiCanvasRenderable extends Tag {
     getLineWidth() {
         return this.entity.getComponent('GuiCanvasRenderComponent').lineWidth;   
     }
-    getFontColor() {
-      return this.entity.getComponent('GuiCanvasRenderComponent').fontColor;
-    }
     getLineDash() {
       return this.entity.getComponent('GuiCanvasRenderComponent').lineDash;
     }
 
     setFillStyle(fillStyle) {
       this.entity.getComponent('GuiCanvasRenderComponent').fillStyle = fillStyle;
-    }
-    
-    getHoverStyle() {
-      return this.entity.getComponent('GuiCanvasRenderComponent').hoverStyle;
     }
 
     setIsHovered(isHovered) {
@@ -101,9 +257,6 @@ export default class GuiCanvasRenderable extends Tag {
       return this.entity.getComponent('GuiCanvasRenderComponent').hoverStyles
     }
 
-    getFontType() {
-      return this.entity.getComponent('GuiCanvasRenderComponent').fontType
-    }
     setIsVisible() {
       this.entity.getComponent('GuiCanvasRenderComponent').isVisible = !this.entity.getComponent('GuiCanvasRenderComponent').isVisible;
     }
@@ -122,5 +275,53 @@ export default class GuiCanvasRenderable extends Tag {
     postRender(renderable, canvasCtx) {
       this.entity.getComponent('GuiCanvasRenderComponent').postRender(renderable, canvasCtx);
     }
+
+    onClick(core) {
+      if (this.entity.getComponent('GuiCanvasRenderComponent').onClick) {
+        this.entity.getComponent('GuiCanvasRenderComponent').onClick(core, this.entity, this.entity.getComponent('GuiCanvasRenderComponent').onClickParams);
+      };
+    }
+
+    onHover(core) {
+      if (this.entity.getComponent('GuiCanvasRenderComponent').onHover) {
+        this.entity.getComponent('GuiCanvasRenderComponent').onHover(core, this.entity, this.entity.getComponent('GuiCanvasRenderComponent').onHoverParams);
+      };
+    }
+
+    onHoverStop(core) {
+      if (this.entity.getComponent('GuiCanvasRenderComponent').onHoverStop) {
+        this.entity.getComponent('GuiCanvasRenderComponent').onHoverStop(core, this.entity, this.entity.getComponent('GuiCanvasRenderComponent').onHoverParams);
+      };
+    }
+
+    isActive(core) {
+      if (this.entity.getComponent('GuiCanvasRenderComponent').isActive) {
+        return this.entity.getComponent('GuiCanvasRenderComponent').isActive(core);
+      };
+    }
+
+    getActiveStyles() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').activeStyle;
+    }
+
+    getAttachedTo() {
+      return this.entity.getComponent('GuiCanvasRenderComponent').attachedToEntity;
+    }
+
+    setAttachedTo(attachedToEntity) {
+      this.entity.getComponent('GuiCanvasRenderComponent').attachedToEntity = attachedToEntity;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
   }
   

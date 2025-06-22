@@ -23,20 +23,24 @@ export default class InputSystem extends System {
                 self.send("INPUT_RECEIVED", { type: 'double_click',  ...this._getCursorCoordinates(event)})
             }
             else if (event.type.indexOf('mousedown') !== -1) {
-                this.activeKeys['mousedown'] = 'press';
+                let action = (this.keyMap || {})['mouse_press'];
+                self.send("INPUT_RECEIVED", { type: 'mouse_press', action: action?.action || action, ...this._getCursorCoordinates(event)});
+            }
+            else if (event.type.indexOf('mousemove') !== -1) {
+                let action = (this.keyMap || {})['mouse_hold'];
+                self.send("INPUT_RECEIVED", { type: 'mouse_hold', action: action?.action || action, ...this._getCursorCoordinates(event)});
             }
             else if (event.type.indexOf('mouseup') !== -1) {
-                this.activeKeys['mouseup'] = 'release';
+                let action = (this.keyMap || {})['mouse_release'];
+                self.send("INPUT_RECEIVED", { type: 'mouse_release', action: action?.action || action, ...this._getCursorCoordinates(event)});
             }
             else if(event.type.indexOf('click') !== -1) {
                 this.activeKeys['click'] = 'once';
                 self.send("INPUT_RECEIVED", { type: 'click', ...this._getCursorCoordinates(event)});
-                self._core.publishData('CURSOR_COORDINATES', this._getCursorCoordinates(event));
-                this.send("DEBUG_DATA", {type: 'cursor', ...this._getCursorCoordinates(event)})
-            }
-            else if(event.type.indexOf('mouse') !== -1) {
-                let cursorCoordinates =  this._getCursorCoordinates(event);
-                self.send("INPUT_RECEIVED", { type: 'cursor_position', ...this._getCursorCoordinates(event)});
+
+                let shiftModifier = this.activeKeys['Shift']
+                let action = (this.keyMap || {})[`left_click${shiftModifier ? '_shift' : ''}`]
+                this.send("INPUT_RECEIVED", { type: 'action', action: action?.action || action, type: 'left_click', ...this._getCursorCoordinates(event), ...(action?.params || {})});
                 self._core.publishData('CURSOR_COORDINATES', this._getCursorCoordinates(event));
                 this.send("DEBUG_DATA", {type: 'cursor', ...this._getCursorCoordinates(event)})
             }
@@ -44,7 +48,14 @@ export default class InputSystem extends System {
                 self.send("INPUT_RECEIVED", { type: 'scroll'})
             }
             else if (event.type.indexOf('contextmenu') !== -1) {
-                self.send("INPUT_RECEIVED", { type: 'contextmenu', ...this._getCursorCoordinates(event)});
+                let action = (this.keyMap || {})['right_click'];
+                self.send("INPUT_RECEIVED", { action: action?.action || action, type: 'right_click', ...this._getCursorCoordinates(event), ...(action?.params || {})});
+            }
+
+            if (event.type.indexOf('mouse') !== -1) {
+                self.send("INPUT_RECEIVED", { type: 'cursor_position', ...this._getCursorCoordinates(event)});
+                self._core.publishData('CURSOR_COORDINATES', this._getCursorCoordinates(event));
+                this.send("DEBUG_DATA", {type: 'cursor', ...this._getCursorCoordinates(event)})
             }
         }
 
@@ -115,9 +126,12 @@ export default class InputSystem extends System {
             }
         }
         let shiftModifier = this.activeKeys['Shift']
+        let ctrlModifier = this.activeKeys['Control']
 
         Object.keys(this.activeKeys).forEach((key) => {
-            this.send("INPUT_RECEIVED", { type: 'action', action: this.keyMap[`${key}_${this.activeKeys[key]}${shiftModifier ? '_shift' : ''}`]});
+            let action = this.keyMap[`${key}_${this.activeKeys[key]}${shiftModifier ? '_shift' : ''}${ctrlModifier ? '_control' : ''}`]
+            this.send("INPUT_RECEIVED", { type: 'action', action: action?.action || action, ...(action || {})});
+
             if (this.activeKeys[key] == 'release' || this.activeKeys[key] == 'once') {
                 delete this.activeKeys[key]
             }

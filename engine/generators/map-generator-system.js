@@ -40,7 +40,11 @@ export default class MapGeneratorSystem extends System {
                 yPosition: floor.yPosition + map.yPosition,
                 width: floor.width,
                 height: floor.height,
-                color: floor.color
+                color: floor.color,
+                imageKey: floor.imageKey,
+                imageStyle: floor.imageStyle,
+                imageType: floor.imageType,
+                shape: floor.shape
             });
         });
     }
@@ -124,7 +128,8 @@ export default class MapGeneratorSystem extends System {
                 radius: light.radius,
                 type: light.type,
                 angleDegrees: light.angleDegrees,
-                coneDegrees: light.coneDegrees
+                coneDegrees: light.coneDegrees,
+                colors: light.colors
             });
         });
     }
@@ -157,7 +162,8 @@ export default class MapGeneratorSystem extends System {
         entity.addComponent(new LightSourceComponent({
             lightType: lightType,
             maxDistance: radius,
-            coneDegrees: coneDegrees || 45
+            coneDegrees: coneDegrees || 45,
+            colors: lightDefinition.colors
         }))
         this._core.addEntity(entity);
     }
@@ -168,6 +174,11 @@ export default class MapGeneratorSystem extends System {
         let width = floorDefinition.width;
         let height = floorDefinition.height;
         let color = floorDefinition.color;
+        let imageKey = floorDefinition.imageKey;
+        let imageStyle = floorDefinition.imageStyle;
+        let shape = floorDefinition.shape;
+        let imageType = floorDefinition.imageType;
+
         let entity = new Entity()
         entity.addComponent(new PositionComponent(
             {
@@ -180,10 +191,13 @@ export default class MapGeneratorSystem extends System {
         entity.addComponent(new RenderComponent({
             width: width,
             height: height,
-            shape: 'rectangle',
+            shape: shape || 'rectangle',
             shapeColor: color,
             angleDegrees: 0, // Used to override the facing direction for positional logic
-            renderLayer: 'TERRAIN'
+            renderLayer: 'TERRAIN',
+            imagePath: imageKey,
+            imageStyle: imageStyle || 0,
+            imageType: imageType || 'continuous'
         }))
         this._core.addEntity(entity);
     }

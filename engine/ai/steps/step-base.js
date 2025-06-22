@@ -2,6 +2,7 @@ export class StepBase {
     constructor(configuration) {
         this.state = 'not_started'
         this.configuration = configuration || {}
+        this.stepId = null;
     }
 
     executeStep(currentState) {
@@ -34,5 +35,9 @@ export class StepBase {
         // Always run this for every action invocation
         // regardless of completion
         return this.configuration.alwaysRun
+    }
+
+    getStepId() {
+        return this.stepId ||= `${constructor.name}-${Math.random()}`
     }
 }

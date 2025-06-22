@@ -18,15 +18,28 @@ export default class AiSystem extends System {
       this.steps = {
       }
 
-      this.stateInformers = {}
+      this.localStateInformers = {}
+      this.globalStateInformers = {}
       this.globalCurrentState = {};
 
       this.addHandler('SET_AI', (payload) => {
-        let entity = this._core.getEntityWithId(payload.entityId)
+        let entity = payload.entity || this._core.getEntityWithId(payload.entityId);
+        this.interruptAi(entity);
+
+        if (payload.fullyCancel) {
+          this.clearIntents(entity);
+        }
+
+        this.setEntityGoal(entity, payload.goal, payload.configuration)
       })
 
       this.addHandler('REGISTER_STATE_INFORMER', (payload) => {
-        this.stateInformers[payload.key] = payload.inform;
+        if (payload.scope == 'global') {
+          this.globalStateInformers[payload.key] = payload.inform;
+        }
+        else {
+          this.localStateInformers[payload.key] = payload.inform;
+        }
       });
 
       this.addHandler('REGISTER_GOAL', (payload) => {
@@ -44,22 +57,32 @@ export default class AiSystem extends System {
       this.addHandler('REGISTER_STEP', (payload) => {
         this.steps[payload.key] = payload.class
       })
+
+      this.wait = 10
     }
     
     work() {
       if (this.goals == {} || this.tactics == {} || this.actions == {} || this.steps == {}) {
         return;
       }
-      this.informCurrentState(this.globalCurrentState);
+      this.informCurrentState(this.globalStateInformers, this.globalCurrentState);
+      let debugDataByEntity = {};
 
       this.workForTag('Ai', (tag, entity) => {
         let currentState = tag.getCurrentState();
+        this.informCurrentState(this.localStateInformers, currentState);
+
         currentState.entityId = entity.id
         currentState.entity = entity;
         currentState.globalCurrentState = this.globalCurrentState;
 
         let goal = this.identifyGoal(tag, entity);
+        if (!goal) {
+          return;
+        }
         tag.setGoal(goal);
+        currentState.goalConfiguration = goal.getConfiguration() || {};
+
         let tactic = this.identifyTactic(goal);
         tag.setTactic(tactic);
         let action = this.identifyAction(tactic, currentState, tag)
@@ -70,24 +93,82 @@ export default class AiSystem extends System {
         }
 
         let steps = this.getStepsToExecute(action, currentState, tag);
+        let lastStepRan = null;
         if (steps?.length) {
-          this.executeSteps(steps, currentState);
+          lastStepRan = this.executeSteps(steps, currentState);
         }
 
         tag.setCurrentState(currentState)
+
+        if (goal.isCompleted(currentState)) {
+          tag.setGoal(null);
+          tag.setTactic(null);
+          tag.setAction(null);
+          tag.setSteps(null);
+          goal.onComplete(this._core, currentState);
+          tag.setCurrentState({})
+        }
+
+        debugDataByEntity[entity.id] = {
+          goal: goal,
+          tactic: tactic,
+          action: action,
+          step: lastStepRan,
+          currentState: currentState
+        }
       });
+
+      this.send('DEBUG_AI_DATA', debugDataByEntity);
     };
 
-    informCurrentState(currentState) {
-      Object.keys(this.stateInformers).forEach((key) => {
-        let stateInformFunction = this.stateInformers[key]
-        let result = stateInformFunction();
-        currentState[key] = result
+    clearIntents(entity) {
+      this._core.send('INTERRUPT_INTENT', {
+        entity: entity,
+        intentType: 'all'
+      })
+    }
+
+    interruptAi(entity) {
+      let tag = this.getTag('Ai')
+      if (!tag.constructor.isAssignableTo(entity)) {
+        return;
+      }
+
+      tag.setEntity(entity);
+      tag.setGoal(null);
+      tag.setTactic(null);
+      tag.setAction(null);
+      tag.setSteps(null);
+      tag.setCurrentState({})
+    }
+
+    informCurrentState(stateInformers, currentState) {
+      Object.keys(stateInformers).forEach((key) => {
+        let stateInformFunction = stateInformers[key]
+        let result = stateInformFunction(currentState, this._core);
+        Object.assign(currentState, result)
       })
     }
 
     identifyGoal(tag, entity) {
-      return new this.goals[Object.keys(this.goals)[0]]
+      let goal = tag.getGoal();
+      if (typeof goal == 'string') {
+        goal = this.setEntityGoal(entity, goal, {}); // Transform strings into Goal objects
+      }
+      return goal;
+    }
+
+    setEntityGoal(entity, goal, configuration) {
+      if (!entity || !goal) {
+        return;
+      }
+
+      let ai = this.getTag('Ai');
+      ai.setEntity(entity);
+      ai.setGoal(new this.goals[goal](configuration));
+      ai.setCurrentState({})
+
+      return ai.getGoal();
     }
 
     identifyTactic(goal) {
@@ -107,7 +188,8 @@ export default class AiSystem extends System {
       actionObjects.forEach((actionObject) => {
         let action = actionObject;
         let key = actionObject.key;
-        action.calculate(currentState, tag.getActionLastRan(key), this._core);
+        
+        action.calculate(currentState, this._core);
 
         if (!action.getScore()) {
           return;
@@ -141,6 +223,7 @@ export default class AiSystem extends System {
       if (action.getCurrentStepIndex() == null) {
         action.prepareAction(currentState, this._core)
         let stepOptions = action.getStepOptions();
+
         let stepObjects = stepOptions.map((stepOption) => { return new this.steps[stepOption.key](this._core, currentState, stepOption.configuration) });
         action.setSteps(stepObjects);
         action.setCurrentStepIndex(0)
@@ -153,7 +236,8 @@ export default class AiSystem extends System {
         if (stepObject.alwaysRun()) {
           stepsToRun.push(stepObject);
         }
-        else if (stepObject.alwaysRunUntilComplete() && !stepObject.isCompleted()) {
+
+        if (stepObject.alwaysRunUntilComplete() && !stepObject.isCompleted()) {
           stepsToRun.push(stepObject);
         }
         else if (index == action.getCurrentStepIndex()) {
@@ -178,20 +262,25 @@ export default class AiSystem extends System {
     }
 
     executeSteps(stepsToExecute, currentState) {
-      let payload = {}
+      let lastStepRan = null;
       stepsToExecute.forEach((stepToExecute) => {
         if (stepToExecute.isNotStarted()) {
           stepToExecute.setState('in_progress');
           stepToExecute.executeStep(currentState);
+          lastStepRan = stepToExecute;
         } else if (stepToExecute.isInProgress() && stepToExecute.checkCompleted(currentState)) {
             stepToExecute.setState('completed');
             if (stepToExecute.alwaysRun()) {
               stepToExecute.executeStep(currentState);
+              lastStepRan = stepToExecute;
             }
         } else if (stepToExecute.isInProgress()) {
             stepToExecute.executeStep(currentState);
+            lastStepRan = stepToExecute;
         }
       });
+
+      return lastStepRan;
     }
 
     deleteKeysNotInObject(obj1, obj2) {

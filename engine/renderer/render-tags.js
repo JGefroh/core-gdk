@@ -16,8 +16,8 @@ export default class Renderable extends Tag {
       return this.entity.getComponent('RenderComponent').renderLayer.toUpperCase();
     }
 
-    getRenderFromCorner() {
-      return this.entity.getComponent('RenderComponent').renderFromCorner;
+    getRenderAlignment() {
+      return this.entity.getComponent('RenderComponent').renderAlignment;
     }
 
     getXPosition() {
@@ -25,8 +25,17 @@ export default class Renderable extends Tag {
     };
   
     getYPosition() {
-      return this.entity.getComponent('PositionComponent').yPosition;
+      if (this.entity.getComponent('RenderComponent').renderAlignment == 'center') {
+        return this.entity.getComponent('PositionComponent').yPosition;
+      }
+      else if (this.entity.getComponent('RenderComponent').renderAlignment == 'bottom-center') {
+        return this.entity.getComponent('PositionComponent').yPosition + (-this.getHeight() / 2);
+      }
     };
+
+    getZIndex() {
+      return this.entity.getComponent('RenderComponent').zIndex;
+    }
   
     getWidth() {
       let width = null;
@@ -66,6 +75,14 @@ export default class Renderable extends Tag {
       return this.entity.getComponent('RenderComponent').imagePath;
     }
 
+    getImageStyle() {
+      return this.entity.getComponent('RenderComponent').imageStyle;
+    }
+
+    getImageType() {
+      return this.entity.getComponent('RenderComponent').imageType;
+    }
+
     setImageObject(imageObject) {
       return this.entity.getComponent('RenderComponent').setImageObject(imageObject);
     }
@@ -97,6 +114,9 @@ export default class Renderable extends Tag {
     getShape() {
       return this.entity.getComponent('RenderComponent').shape;
     }
+    setShapeColor(shapeColor) {
+      this.entity.getComponent('RenderComponent').shapeColor = shapeColor;
+    }
 
     getShapeColor() {
       return this.entity.getComponent('RenderComponent').shapeColor;
@@ -111,6 +131,19 @@ export default class Renderable extends Tag {
     }
     getPathPoints() {
       return this.entity.getComponent('RenderComponent').pathPoints;
+    }
+
+    
+
+    ////////
+    // Borders
+    ////////
+    getBorderSize() {
+      return this.entity.getComponent('RenderComponent').borderSize;
+    }
+
+    getBorderColor() {
+      return this.entity.getComponent('RenderComponent').borderColor;
     }
 }
   

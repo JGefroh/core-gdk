@@ -8,4 +8,15 @@ export class GoalBase {
     getTacticOptions() {
         return this.tacticOptions;
     }
+
+    getConfiguration() {
+        return this.configuration;
+    }
+
+    isCompleted() {
+        return false;
+    }
+
+    onComplete() {
+    }
 }

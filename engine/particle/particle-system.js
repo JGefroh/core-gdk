@@ -17,12 +17,12 @@ export default class ParticleSystem extends System {
             this._createEmitter(payload);
         });
 
-        this.send("REGISTER_RENDER_LAYER", {
-            layer: 'PARTICLES_BEFORE_LIGHTING',
-            render: (renderOptions) => {
-                this._render(this.particles, renderOptions)
+        this.send('REGISTER_RENDER_PASS', {
+            name: 'PARTICLE',
+            execute: (renderer, materialResolver) => {
+                this._submitRenderableDraws(renderer, materialResolver);
             }
-        })
+        });
     }
 
     _createEmitter(payload) {
@@ -60,11 +60,13 @@ export default class ParticleSystem extends System {
             particleWidthMax,
             particleShape,
             particleColors,
-            particleSpeedMin,
+            particleSpeedMin, 
             particleSpeedMax,
             particleEmissionAngleDegreesMin,
             particleEmissionAngleDegreesMax,
             particleSpawnRadius = 0,
+            fxRotateDegrees,
+            fxSizeChangeRate
         } = emitter;
 
         for (let i = 0; i < particleCount; i++) {
@@ -95,9 +97,12 @@ export default class ParticleSystem extends System {
                 width,
                 height,
                 shape: particleShape,
+                angleDegrees: angleDeg,
                 color,
                 age: 0,
                 lifetime,
+                fxRotateDegrees,
+                fxSizeChangeRate
             });
         }
     }
@@ -115,56 +120,55 @@ export default class ParticleSystem extends System {
                     tag.incrementParticleEmissionCyclesCurrent();
                     emitter.nextEmissionTime = now + (emitter.particleEmitFrequencyInMs || 1000);
                 }
+                else {
+                    this._core.markRemoveEntity(tag.getEntity()?.id);
+                }
             }
         });
 
         // Update particles
         this.particles = this.particles.filter(p => {
             p.age += deltaMs;
-            if (p.age >= p.lifetime) return false;
+            if (p.age >= p.lifetime) {
+                return false;
+            }
 
+            // Position
             p.xPosition += p.vx * (deltaMs / 1000);
             p.yPosition += p.vy * (deltaMs / 1000);
+
+            // FX Rotation
+            if (p.fxRotateDegrees) {
+                p.angleDegrees += p.fxRotateDegrees; 
+            }
+
+            // FX Shrink
+            if (p.fxSizeChangeRate) {
+                p.width = p.width + p.width * p.fxSizeChangeRate
+                p.height = p.height + p.height * p.fxSizeChangeRate
+            }
             return true;
         });
 
     }
 
-    _render(particles, renderOptions) {
-        const viewport = renderOptions.viewport;
-        const ctx = renderOptions.layerCanvasCtx;
-        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-        if (!ctx) return;
-
-        ctx.save();
-
+    _submitRenderableDraws(renderer, materialResolver) {
+        let particles = this.particles;
         for (const particle of particles) {
-            ctx.fillStyle = particle.color;
-            const screenX = (particle.xPosition * viewport.scale) - viewport.xPosition;
-            const screenY = (particle.yPosition * viewport.scale) - viewport.yPosition;
+            const materialId = materialResolver.resolve(particle);
 
-            if (particle.shape === 'circle') {
-                ctx.beginPath();
-                ctx.arc(
-                    screenX,
-                    screenY,
-                    particle.width / 2, // assume width == height for circle
-                    0,
-                    2 * Math.PI
-                );
-                ctx.fill();
-            } else { // default to rectangle
-                ctx.fillRect(
-                    screenX - particle.width / 2,
-                    screenY - particle.height / 2,
-                    particle.width,
-                    particle.height
-                );
-            }
-        }
-
-        ctx.restore();
+            renderer.submitRenderCommand({
+                materialId,
+                shape: particle.shape,
+                xPosition: particle.xPosition,
+                yPosition: particle.yPosition,
+                width: particle.width,
+                height: particle.height,
+                color: particle.color,
+                angleDegrees: particle.angleDegrees,
+                options: {} // Use later
+            });
+        };
     }
 
     _rand(min, max) {

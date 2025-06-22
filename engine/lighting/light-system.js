@@ -129,26 +129,34 @@ export default class LightSystem extends System {
         const sourceY = lightable.getYPosition();
         const renderable = this.getTag('Renderable');
         renderable.setEntity(lightable.getEntity());
-
+    
         const padding = lightable.getPadding();
         const rotation = lightable.getAngleDegrees() || 0;
-
+    
         const edges = this._getRectangleEdges(renderable, rotation);
         const rays = [];
-
-        for (const [p1, _] of edges) {
-            const dx = p1.x - sourceX;
-            const dy = p1.y - sourceY;
-            const dist = Math.hypot(dx, dy);
-            const scale = (dist + padding) / dist || 1;
-
-            rays.push({
-                x: sourceX + dx * scale,
-                y: sourceY + dy * scale,
-                angle: Math.atan2(dy, dx)
-            });
+    
+        const raysPerEdge = 16; // Adjust for resolution
+    
+        for (const [p1, p2] of edges) {
+            for (let i = 0; i <= raysPerEdge; i++) {
+                const t = i / raysPerEdge;
+                const x = p1.x + (p2.x - p1.x) * t;
+                const y = p1.y + (p2.y - p1.y) * t;
+    
+                const dx = x - sourceX;
+                const dy = y - sourceY;
+                const dist = Math.hypot(dx, dy);
+                const scale = (dist + padding) / dist || 1;
+    
+                rays.push({
+                    x: sourceX + dx * scale,
+                    y: sourceY + dy * scale,
+                    angle: Math.atan2(dy, dx)
+                });
+            }
         }
-
+    
         lightable.setRays(rays);
     }
 
@@ -265,12 +273,8 @@ export default class LightSystem extends System {
                 startAngleRadians: startAngleRadians,
                 endAngleRadians: endAngleRadians,
                 softnessRadians: softnessRadians,
-                fill: [
-                    [0.0, 'rgba(255, 250, 230, 1.0)'],
-                    [0.1, 'rgba(255, 245, 200, 1.0)'],
-                    [0.8, 'rgba(255, 220, 150, 0.5)'],
-                    [1.0,  'rgba(255, 220, 150, 0)'],
-                ]
+                fill: lightable.getColors(),
+                hardLight: lightable.getLightType() == 'self'
             }
         );
     }
@@ -283,12 +287,8 @@ export default class LightSystem extends System {
             {
                 returnToOrigin: true,
                 arcSize: lightable.getMaxDistance(),
-                fill: [
-                    [0.0, 'rgba(255, 250, 230, 1.0)'],
-                    [0.1, 'rgba(255, 245, 200, 1.0)'],
-                    [0.8, 'rgba(255, 220, 150, 0.5)'],
-                    [1.0,  'rgba(255, 220, 150, 0)'],
-                ]
+                fill: lightable.getColors(),
+                hardLight: lightable.getLightType() == 'self'
             }
         );
     }

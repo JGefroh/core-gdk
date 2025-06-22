@@ -91,7 +91,7 @@ export default class Movable extends Tag{
       this.entity.getComponent('VectorComponent').maxMagnitude = maxMagnitude;
     }
   
-    addVector(magnitude, direction, maxMagnitude) {
+    addVector(magnitude, direction) {
         this.entity.getComponent('VectorComponent').addVector(magnitude, direction)
     };
 

@@ -1,4 +1,4 @@
-export class TacticBase {
+export class TacticBase extends TacticBase {
     constructor(configuration = {}) {
         this.configuration = configuration;
         this.actionOptions = [

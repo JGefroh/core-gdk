@@ -5,7 +5,7 @@ export default class ViewportSystem extends System {
     super()
     this.viewportWidth = window.innerWidth;
     this.viewportHeight = window.innerHeight;
-    this.viewportScale = 2.4;
+    this.viewportScale = 1.0;
 
     if (window.location.href.indexOf('debug1') != -1) {
       this.viewportScale = 0.9
@@ -36,43 +36,55 @@ export default class ViewportSystem extends System {
     this.shakeDuration = 0;
     this.shakeMagnitude = 0;
 
+    this.viewportBounds = {minXPosition: -Infinity, minYPosition: -Infinity, maxXPosition: Infinity, maxYPosition: Infinity}
+
     this.addHandler('CAMERA_SHAKE', (payload = {}) => {
       this.shakeDuration = payload.duration || 50; // in ms
       this.shakeMagnitude = (payload.magnitude || 2) / this.viewportScale; // scale-safe
       this.shakeTimer = this.shakeDuration;
     });
 
+    this.addHandler('SET_VIEWPORT_BOUNDS', (payload) => {
+      this.viewportBounds = {
+        minXPosition: payload.minXPosition,
+        minYPosition: payload.minYPosition,
+        maxXPosition: payload.maxXPosition,
+        maxYPosition: payload.maxYPosition
+      }
+    });
+
     this.addHandler('INPUT_RECEIVED', (payload) => {
+      let speed = payload.speed || 30;
       if (payload.action == 'move_viewport_up') {
         if (this.viewportMode == 'follow') {
-          this.viewportYOffset -= (30 / this.viewportScale);
+          this.viewportYOffset -= (speed / this.viewportScale);
         }
         else {
-          this.viewportWorldYPosition -= (30 / this.viewportScale);
+          this.viewportWorldYPosition -= (speed / this.viewportScale);
         }
       }
       if (payload.action == 'move_viewport_down') {
         if (this.viewportMode == 'follow') {
-          this.viewportYOffset += (30 / this.viewportScale);
+          this.viewportYOffset += (speed / this.viewportScale);
         }
         else {
-          this.viewportWorldYPosition += (30 / this.viewportScale);
+          this.viewportWorldYPosition += (speed / this.viewportScale);
         }
       }
       if (payload.action == 'move_viewport_left') {
         if (this.viewportMode == 'follow') {
-          this.viewportXOffset -= (30 / this.viewportScale);
+          this.viewportXOffset -= (speed / this.viewportScale);
         }
         else {
-          this.viewportWorldXPosition -= (30 / this.viewportScale);
+          this.viewportWorldXPosition -= (speed / this.viewportScale);
         }
       }
       if (payload.action == 'move_viewport_right') {
         if (this.viewportMode == 'follow') {
-          this.viewportXOffset += (30 / this.viewportScale);
+          this.viewportXOffset += (speed / this.viewportScale);
         }
         else {
-          this.viewportWorldXPosition += (30 / this.viewportScale);
+          this.viewportWorldXPosition += (speed / this.viewportScale);
         }
       }
 
@@ -109,16 +121,58 @@ export default class ViewportSystem extends System {
         this.viewportXOffset = 0;
         this.viewportYOffset = 0;
       }
+
+      if (this.viewportMode === 'free') {
+        this.enforceViewportBounds();
+      }
     });
 
     this.addHandler('TRACK_ENTITY_REQUESTED', (payload) => {
       this.followEntityId = payload.entityId;
     })
+
+    this.addHandler('SET_VIEWPORT', (payload) => {
+      this.viewportWorldYPosition = payload.yPosition / this.viewportScale;
+      this.viewportWorldXPosition = payload.xPosition / this.viewportScale;
+      this.enforceViewportBounds();
+    })
+
+    this.addHandler('ADJUST_VIEWPORT_SCALE', (payload) => {
+      this.viewportScale += payload.scale;
+    })
+
+
+    this.addHandler('SET_VIEWPORT_SCALE', (payload) => {
+      this.viewportScale = payload.scale;
+    })
+
+    this.addHandler('SET_VIEWPORT_SCALE_CHANGE_RATE', (payload) => {
+      this.viewportScaleChangeRate = payload.scale;
+    })
   }
 
   work() {
+    if (this.viewportScaleChangeRate) {
+      this.viewportScale += this.viewportScaleChangeRate;
+    }
+
     this.updatePrimaryViewport();
     this.updateSecondaryViewport();
+  }
+
+  enforceViewportBounds() {
+      const halfVisibleWidth = (this.viewportWidth / this.viewportScale) / 2;
+      const halfVisibleHeight = (this.viewportHeight / this.viewportScale) / 2;
+
+      this.viewportWorldXPosition = Math.max(
+        this.viewportBounds.minXPosition + halfVisibleWidth,
+        Math.min(this.viewportWorldXPosition, this.viewportBounds.maxXPosition - halfVisibleWidth)
+      );
+
+      this.viewportWorldYPosition = Math.max(
+        this.viewportBounds.minYPosition + halfVisibleHeight,
+        Math.min(this.viewportWorldYPosition, this.viewportBounds.maxYPosition - halfVisibleHeight)
+      );
   }
 
   updatePrimaryViewport() {

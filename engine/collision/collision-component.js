@@ -9,5 +9,10 @@ export default class CollisionComponent extends Component {
         this.collisionShape = payload.collisionShape || 'rectangle' // circle, rectangle
 
         this.onCollision = payload.onCollision || ((collidable) => {});
+
+
+        // Set these values to override use a different size for the collision instead of the position size.
+        this.width = payload.width || null;
+        this.height = payload.height || null;
     }
 }

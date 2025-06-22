@@ -1,4 +1,5 @@
 import { default as System } from '@core/system';
+import AudioPlayer from './audio-player';
 
 export default class AudioSystem extends System {
     constructor() {
@@ -8,60 +9,21 @@ export default class AudioSystem extends System {
       this.audioState = {
       }
       this.audioCache = {}
+      this.audioPlayer = new AudioPlayer();
+
+      this.audioFiles = {};
+      this.audioFilesByGroup = {};
+
+      this.addHandler('LOAD_AUDIO', (payload) => {
+        this.audioFiles[payload.key] = payload;
+        if (payload.group) {
+          this.audioFilesByGroup[payload.group] ||= [];
+          this.audioFilesByGroup[payload.group].push(payload);
+        }
+      })
 
       this.addHandler('PLAY_AUDIO', (payload) => {
-        const {
-          audioKey,
-          exclusive,
-          exclusiveGroup,
-          loop,
-          volume = 1,
-          startAt = 0,
-          endAt,
-          listenerXPosition, // Optional
-          listenerYPosition, // Optional
-          sourceXPosition, // Optional
-          sourceYPosition, // Optional
-          decibels // Optional
-        } = payload;
-      
-        const group = exclusiveGroup || (exclusive ? audioKey : null);
-        
-        // Skip if already playing in group
-        if (exclusive && group && this.exclusiveGroups[group]) {
-          return;
-        }
-      
-        try {
-          const audio = this._getAudioFromPool(audioKey);
-          audio.currentTime = startAt;
-          audio.loop = loop;
-          audio.volume = payload.decibels > 0 ? this.getVolume(sourceXPosition, sourceYPosition, decibels) : volume;
-
-          this.audioState[audioKey] = audio;
-          if (exclusive && group) {
-            this.exclusiveGroups[group] = audioKey;
-          }
-          audio.play().then(() => {
-          }).catch(() => {});
-
-          audio.addEventListener('ended', () => {
-            delete this.audioState[audioKey];
-            delete this.exclusiveGroups[group];
-          });
-          
-          if (endAt) {
-            audio.addEventListener('timeupdate', () => {
-              if (audio.currentTime >= endAt) {
-                audio.pause();
-                delete this.audioState[audioKey];
-                delete this.exclusiveGroups[group];
-              }
-            });
-          }
-        } catch (e) {
-          console.error(`Audio error: ${e}`);
-        }
+        this._playAudio(payload);
       });
 
       this.addHandler('STOP_AUDIO', (payload) => {
@@ -74,20 +36,49 @@ export default class AudioSystem extends System {
           delete this.exclusiveGroups[group];
         }
       });
+
     }
   
     work() {
+      let listenerPosition = this._getAudioListenerPosition();
+      if (listenerPosition) {
+        this.audioPlayer.setListenerPositon(listenerPosition.xPosition, listenerPosition.yPosition)
+      }
     };
 
-    _getAudioFromPool(audioKey) {
-      this.audioCache[audioKey] ||= [];
-      const pool = this.audioCache[audioKey];
-      let audio = pool.find(a => a.paused || a.ended);
-      if (!audio) {
-        audio = new Audio(`assets/audio/${audioKey}`);
-        pool.push(audio);
-      }
-      return audio;
+    async _playAudio(payload) {
+        const {
+          audioKey,
+          groupKey, // optional, use groupKey to select a random audio from a group
+          sourceXPosition, // Optional If you set this and decibels, you can use audio falloff.
+          sourceYPosition, // Optional
+          volume = 1, // an absolute value for volume
+          decibels, // Optional The "power" of the sound, 
+          cooldownMs = 0, // optional - amount of time before another variant of this audio key or exclusiveGroup can be played.
+          loop = false, // whether to loop
+          exclusiveGroup, // exlusivity is segmented via all shared audio playbacks in the same group - useful for variants
+          endsAtMs, // end playback at a specific ms
+          startsAtMs = 0, // start playback at a specific ms
+        } = payload;
+
+        let path = `/assets/audio/${audioKey}`;
+        if (this.audioFiles[audioKey]) {
+          path = `/assets/audio/${this.audioFiles[audioKey].path}`;
+        }
+        else if (groupKey) {
+          path =  `/assets/audio/${this._randomFrom(this.audioFilesByGroup[groupKey]).path}`;;
+        }
+
+        this.audioPlayer.play(path, {
+          group: groupKey,
+          sourceXPosition: sourceXPosition,
+          sourceYPosition: sourceYPosition,
+          volume: decibels >= 0 ? (decibels/130) : volume ,
+          cooldownMs: cooldownMs,
+          exclusiveGroup: exclusiveGroup,
+          startsAtMs: startsAtMs,
+          endsAtMs: endsAtMs
+        });
     }
 
     _getAudioListenerPosition() {
@@ -100,27 +91,8 @@ export default class AudioSystem extends System {
       return position;
     }
 
-    getVolume(sourceX, sourceY, sourceDb) {
-      let listenerPosition = this._getAudioListenerPosition();
-
-      if (!listenerPosition) {
-        return 1; // Use basic audio system;
-      }
-
-      const maxDistance = 300;
-    
-      // Compute distance
-      const dx = sourceX - listenerPosition.xPosition;
-      const dy = sourceY - listenerPosition.yPosition;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-    
-      // Clamp and normalize distance
-      const normalizedDistance = Math.min(distance / maxDistance, 1);
-    
-      // Apply quadratic falloff (ease-out)
-      const volume = 1 - Math.pow(normalizedDistance, 2);
-   
-      return volume;
+    _randomFrom(array) {
+        return array[Math.floor(Math.random() * array.length)];
     }
   }
   

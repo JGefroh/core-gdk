@@ -19,21 +19,14 @@ export class ActionBase {
         this.stepObjects = steps;
     }
 
-    getKey() {
-        return this.key;
+    calculate(currentState, core) {
+        if (this.configuration.calculateScore) {
+            this.score = this.configuration.calculateScore(currentState, core);
+        }
     }
 
-    calculate(currentState, lastRun, core) {
-        if (this.isInCooldown(lastRun)) {
-            this.score = 0;
-            return 0;
-        }
-
-        let score = this.calculateScore(currentState, core)
-        if (score != null) {
-            this.score = score;
-        }
-        return this.score;
+    getKey() {
+        return this.key;
     }
 
     getScore() {
